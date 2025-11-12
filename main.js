@@ -1,38 +1,44 @@
-// 本地预览功能，上传到后端后可调整
-const photoInput = document.getElementById('photo-input');
-const previewDiv = document.getElementById('preview');
-const galleryDiv = document.getElementById('gallery');
-const form = document.getElementById('photo-upload-form');
+// 1. 监听文件上传
+document.getElementById('photo-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
 
-// 展示预览
-photoInput.addEventListener('change', (event) => {
-  previewDiv.innerHTML = '';
-  Array.from(event.target.files).forEach(file => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = document.createElement('img');
-      img.src = e.target.result;
-      previewDiv.appendChild(img);
+  // 2. 读取文件并转成Base64（用于本地存储和预览）
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const photoData = {
+      name: file.name,
+      data: event.target.result,
+      time: new Date().toLocaleString()
     };
-    reader.readAsDataURL(file);
-  });
+
+    // 3. 保存到本地存储（localStorage）
+    let savedPhotos = JSON.parse(localStorage.getItem('birthdayPhotos') || '[]');
+    savedPhotos.push(photoData);
+    localStorage.setItem('birthdayPhotos', JSON.stringify(savedPhotos));
+
+    // 4. 立即渲染刚上传的照片
+    renderPhotos([photoData]);
+  };
+  reader.readAsDataURL(file);
 });
 
-// 假设本地上传，实际可接API接口
-form.addEventListener('submit', (event) => {
-  event.preventDefault();
-  const files = photoInput.files;
-  Array.from(files).forEach(file => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = document.createElement('img');
-      img.src = e.target.result;
-      galleryDiv.appendChild(img);
-    };
-    reader.readAsDataURL(file);
+// 5. 页面加载时渲染已保存的照片
+window.onload = function() {
+  const savedPhotos = JSON.parse(localStorage.getItem('birthdayPhotos') || '[]');
+  renderPhotos(savedPhotos);
+};
+
+// 6. 渲染照片的函数
+function renderPhotos(photos) {
+  const photoContainer = document.getElementById('photo-container');
+  photos.forEach(photo => {
+    const photoItem = document.createElement('div');
+    photoItem.className = 'photo-item';
+    photoItem.innerHTML = `
+      < img src="${photo.data}" alt="${photo.name}">
+      <p>${photo.name}（${photo.time}）</p >
+    `;
+    photoContainer.appendChild(photoItem);
   });
-  previewDiv.innerHTML = '';
-  form.reset();
-});
+}
